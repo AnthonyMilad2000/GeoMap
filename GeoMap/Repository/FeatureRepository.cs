@@ -26,35 +26,35 @@ namespace GeoMap.Repository
             var list = new List<Feature>();
 
             var connection = new NpgsqlConnection(_applicationDB.ConnectionString);
-            
-                await connection.OpenAsync();
+
+            await connection.OpenAsync();
 
             var cmd = new NpgsqlCommand("SELECT id, name, type, description, geometry, color, created_at, updated_at FROM features", connection);
             var reader = await cmd.ExecuteReaderAsync();
-                
-                    while (await reader.ReadAsync())
-                    {
-                        list.Add(new Feature
-                        {
-                            Id = reader.GetInt32(0),
-                            Name = reader.GetString(1),
 
-                            Type = (GEOType)Enum.Parse(typeof(GEOType), reader.GetString(2)),
+            while (await reader.ReadAsync())
+            {
+                list.Add(new Feature
+                {
+                    Id = reader.GetInt32(0),
+                    Name = reader.GetString(1),
 
-                            Description = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                    Type = (GEOType)Enum.Parse(typeof(GEOType), reader.GetString(2)),
 
-                            Geometry = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                    Description = reader.IsDBNull(3) ? "" : reader.GetString(3),
 
-                            Color = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                    Geometry = reader.IsDBNull(4) ? "" : reader.GetString(4),
 
-                            CreatedAt = reader.GetDateTime(6),
+                    Color = reader.IsDBNull(5) ? "" : reader.GetString(5),
 
-                            UpdatedAt = reader.IsDBNull(7)
-                            ? DateTime.MinValue
-                            : reader.GetDateTime(7)
-                        });
-                    }
-            
+                    CreatedAt = reader.GetDateTime(6),
+
+                    UpdatedAt = reader.IsDBNull(7)
+                    ? DateTime.MinValue
+                    : reader.GetDateTime(7)
+                });
+            }
+
 
             return list;
         }
@@ -62,52 +62,52 @@ namespace GeoMap.Repository
         public async Task AddAsync(Feature feature)
         {
             var connection = new NpgsqlConnection(_applicationDB.ConnectionString);
-            
-                await connection.OpenAsync();
 
-                var cmd = new NpgsqlCommand(@"
+            await connection.OpenAsync();
+
+            var cmd = new NpgsqlCommand(@"
             INSERT INTO features (name, type, description, geometry, color, created_at)
             VALUES (@name, @type, @description, @geometry, @color, @created_at)
         ", connection);
 
-                cmd.Parameters.AddWithValue("@name", feature.Name);
-                cmd.Parameters.AddWithValue("@type", feature.Type.ToString()); 
-                cmd.Parameters.AddWithValue("@description", (object)feature.Description ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@geometry", (object)feature.Geometry ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@color", (object)feature.Color ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@created_at", DateTime.Now);
+            cmd.Parameters.AddWithValue("@name", feature.Name);
+            cmd.Parameters.AddWithValue("@type", feature.Type.ToString());
+            cmd.Parameters.AddWithValue("@description", (object)feature.Description ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@geometry", (object)feature.Geometry ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@color", (object)feature.Color ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@created_at", DateTime.Now);
 
-                await cmd.ExecuteNonQueryAsync();
+            await cmd.ExecuteNonQueryAsync();
 
 
-            
+
         }
 
 
         public async Task DeleteAsync(int id)
         {
             var connection = new NpgsqlConnection(_applicationDB.ConnectionString);
-            
-                await connection.OpenAsync();
 
-                var cmd = new NpgsqlCommand(
-                    "DELETE FROM features WHERE id = @id",
-                    connection
-                );
+            await connection.OpenAsync();
 
-                cmd.Parameters.AddWithValue("@id", id);
+            var cmd = new NpgsqlCommand(
+                "DELETE FROM features WHERE id = @id",
+                connection
+            );
 
-                await cmd.ExecuteNonQueryAsync();
-            
+            cmd.Parameters.AddWithValue("@id", id);
+
+            await cmd.ExecuteNonQueryAsync();
+
         }
 
         public async Task UpdateAsync(Feature feature)
         {
             var connection = new NpgsqlConnection(_applicationDB.ConnectionString);
-            
-                await connection.OpenAsync();
 
-                var cmd = new NpgsqlCommand(@"
+            await connection.OpenAsync();
+
+            var cmd = new NpgsqlCommand(@"
             UPDATE features
             SET name = @name,
                 type = @type,
@@ -118,16 +118,51 @@ namespace GeoMap.Repository
             WHERE id = @id
         ", connection);
 
-                cmd.Parameters.AddWithValue("@id", feature.Id);
-                cmd.Parameters.AddWithValue("@name", feature.Name);
-                cmd.Parameters.AddWithValue("@type", feature.Type.ToString());
-                cmd.Parameters.AddWithValue("@description", (object)feature.Description ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@geometry", (object)feature.Geometry ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@color", (object)feature.Color ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@updated_at", DateTime.Now);
+            cmd.Parameters.AddWithValue("@id", feature.Id);
+            cmd.Parameters.AddWithValue("@name", feature.Name);
+            cmd.Parameters.AddWithValue("@type", feature.Type.ToString());
+            cmd.Parameters.AddWithValue("@description", (object)feature.Description ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@geometry", (object)feature.Geometry ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@color", (object)feature.Color ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@updated_at", DateTime.Now);
 
-                await cmd.ExecuteNonQueryAsync();
-            
+            await cmd.ExecuteNonQueryAsync();
+
+        }
+
+        public async Task<List<Feature>> SearchByNameAsync(string name)
+        {
+            var list = new List<Feature>();
+
+            var connection = new NpgsqlConnection(_applicationDB.ConnectionString);
+            await connection.OpenAsync();
+
+            var cmd = new NpgsqlCommand(@"
+                SELECT id, name, type, description, geometry, color, created_at, updated_at 
+                FROM features 
+                WHERE LOWER(name) LIKE LOWER(@name)
+            ", connection);
+
+            cmd.Parameters.AddWithValue("@name", $"%{name}%");
+
+            var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                list.Add(new Feature
+                {
+                    Id = reader.GetInt32(0),
+                    Name = reader.GetString(1),
+                    Type = (GEOType)Enum.Parse(typeof(GEOType), reader.GetString(2)),
+                    Description = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                    Geometry = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                    Color = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                    CreatedAt = reader.GetDateTime(6),
+                    UpdatedAt = reader.IsDBNull(7) ? DateTime.MinValue : reader.GetDateTime(7)
+                });
+            }
+
+            return list;
         }
     }
 }

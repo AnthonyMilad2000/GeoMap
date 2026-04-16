@@ -523,13 +523,11 @@ namespace GeoMap.UI
 
         }
 
-        private void searchBox_TextChanged(object sender, EventArgs e)
+        private async void searchBox_TextChanged(object sender, EventArgs e)
         {
-            string keyword = searchBox.Text.Trim().ToLower();
+            string name = searchBox.Text.Trim();
 
-            var filtered = _state.AllFeatures
-                .Where(x => x.Name != null && x.Name.ToLower().Contains(keyword))
-                .ToList();
+            var filtered = await _service.SearchByNameAsync(name);
 
             dataGridView1.DataSource = filtered;
         }

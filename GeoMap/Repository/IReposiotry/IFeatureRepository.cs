@@ -13,5 +13,6 @@ namespace GeoMap.Repository.IReposiotry
         Task AddAsync(Feature feature);
         Task UpdateAsync(Feature feature);
         Task DeleteAsync(int id);
+        Task<List<Feature>> SearchByNameAsync(string name);
     }
 }

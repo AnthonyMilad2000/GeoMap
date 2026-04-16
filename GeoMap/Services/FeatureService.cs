@@ -51,5 +51,10 @@ namespace GeoMap.Services
         {
             await _repo.DeleteAsync(id);
         }
+
+        public async Task<List<Feature>> SearchByNameAsync(string name)
+        {
+            return await _repo.SearchByNameAsync(name);
+        }
     }
 }
